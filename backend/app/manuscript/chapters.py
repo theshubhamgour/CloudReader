@@ -43,6 +43,11 @@ def _looks_like_subtitle(text: str) -> bool:
     return len(text) <= 60 and not re.search(r"[.!?…\"”]$", text) and count_words(text) <= 8
 
 
+def _looks_like_title(text: str) -> bool:
+    t = text.strip()
+    return 0 < len(t) <= 80 and len(t.split()) <= 12 and t[-1] not in ".!?:;,\"'”’"
+
+
 def detect_chapters(blocks: list[Block]) -> tuple[str | None, list[DetectedChapter]]:
     """Returns (detected book title, chapters). Never drops text."""
     title = next((b.text for b in blocks if b.kind == "title"), None)
@@ -91,6 +96,11 @@ def detect_chapters(blocks: list[Block]) -> tuple[str | None, list[DetectedChapt
         pending_subtitle = False
         current.paragraphs.append(b.text)
 
+    # A lone short line before the first chapter (e.g. the title at the top of a .txt file)
+    # is the book's title, not a chapter of its own.
+    if chapters and len(front.paragraphs) == 1 and _looks_like_title(front.paragraphs[0]):
+        title = title or front.paragraphs[0]
+        front.paragraphs = []
     if front.paragraphs:
         if not chapters:
             front.title = "Full Text"  # no chapter headings: the whole document is one part

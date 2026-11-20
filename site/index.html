@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>CloudReader: turn any document into an audiobook</title>
+  <meta name="description" content="CloudReader turns Word, EPUB, text and Markdown files into audiobooks on your own computer. Free, open source and private, with an offline voice or natural Gemini AI narration.">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/logo-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="CloudReader: turn any document into an audiobook">
+  <meta property="og:description" content="Free, open-source and private. Drop in a document, press Play, and listen.">
+  <meta property="og:image" content="https://theshubhamgour.github.io/CloudReader/assets/og.jpg">
+  <meta property="og:url" content="https://theshubhamgour.github.io/CloudReader/">
+  <meta name="twitter:card" content="summary_large_image">
+  <style>
+    :root {
+      --bg: #f5f5f7; --surface: #fff; --ink: #1d1d1f; --muted: #6e6e73; --faint: #86868b;
+      --line: rgb(0 0 0 / .08); --fill: rgb(120 120 128 / .1); --accent: #0071e3; --accent-hover: #0077ed;
+      --shadow: 0 1px 2px rgb(0 0 0 / .04), 0 12px 32px rgb(0 0 0 / .07);
+      --shot-shadow: 0 2px 8px rgb(0 0 0 / .06), 0 30px 80px rgb(0 0 0 / .16);
+      --code-bg: #1d1d1f; --code-ink: #f5f5f7;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #000; --surface: #1c1c1e; --ink: #f5f5f7; --muted: #a1a1a6; --faint: #6e6e73;
+        --line: rgb(255 255 255 / .1); --fill: rgb(120 120 128 / .22); --accent: #2997ff; --accent-hover: #47a5ff;
+        --shadow: 0 0 0 1px rgb(255 255 255 / .06);
+        --shot-shadow: 0 0 0 1px rgb(255 255 255 / .08), 0 30px 80px rgb(0 0 0 / .6);
+        --code-bg: #1c1c1e; --code-ink: #f5f5f7;
+        color-scheme: dark;
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font: 17px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      -webkit-font-smoothing: antialiased; letter-spacing: -.01em;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    img { max-width: 100%; height: auto; display: block; }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 22px; }
+    h1, h2, h3 { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Segoe UI", Roboto, sans-serif; letter-spacing: -.025em; margin: 0; }
+
+    /* nav */
+    nav.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 72%, transparent);
+      -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid var(--line); }
+    nav.top .wrap { display: flex; align-items: center; height: 52px; gap: 24px; }
+    .brand { display: flex; align-items: center; gap: 9px; color: var(--ink); font-weight: 600; font-size: 19px; }
+    .brand:hover { text-decoration: none; }
+    .brand img { width: 28px; height: 28px; border-radius: 7px; }
+    .links { display: flex; gap: 22px; margin-left: auto; font-size: 13px; }
+    .links a { color: var(--ink); opacity: .8; }
+    .links a:hover { opacity: 1; text-decoration: none; }
+    .pill { display: inline-flex; align-items: center; gap: 7px; border-radius: 980px; font-weight: 500; transition: background .2s, transform .15s; white-space: nowrap; }
+    .pill:active { transform: scale(.97); }
+    .pill:hover { text-decoration: none; }
+    .pill.sm { padding: 5px 13px; font-size: 13px; }
+    .pill.lg { padding: 13px 26px; font-size: 17px; }
+    .pill.primary { background: var(--accent); color: #fff; }
+    .pill.primary:hover { background: var(--accent-hover); }
+    .pill.ghost { color: var(--accent); }
+    .pill.ghost:hover { background: var(--fill); }
+    .pill svg { width: 1em; height: 1em; }
+    @media (max-width: 720px) { .links a.hide-sm { display: none; } }
+
+    /* hero */
+    .hero { text-align: center; padding: 84px 0 0; }
+    .hero .icon { width: 96px; height: 96px; margin: 0 auto 26px; border-radius: 22px; box-shadow: 0 10px 30px rgb(0 113 227 / .3); }
+    .hero h1 { font-size: clamp(44px, 8vw, 80px); line-height: 1.05; font-weight: 700; }
+    .hero h1 .grad { background: linear-gradient(90deg, #5ac8fa, #0071e3 55%, #5e5ce6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .hero p.lead { font-size: clamp(19px, 2.4vw, 24px); color: var(--muted); max-width: 640px; margin: 22px auto 0; line-height: 1.4; }
+    .cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 34px; }
+    .meta { margin-top: 18px; font-size: 14px; color: var(--faint); }
+    .shot { margin: 60px auto 0; max-width: 1000px; border-radius: 14px; overflow: hidden; box-shadow: var(--shot-shadow); background: var(--surface); }
+    .shot .bar { height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 13px; background: var(--fill); border-bottom: 1px solid var(--line); }
+    .shot .bar i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+    .shot .bar i:nth-child(1) { background: #ff5f57; } .shot .bar i:nth-child(2) { background: #febc2e; } .shot .bar i:nth-child(3) { background: #28c840; }
+    .shot .bar span { margin: 0 auto; font-size: 12px; color: var(--faint); transform: translateX(-20px); }
+
+    /* sections */
+    section { padding: 110px 0 0; }
+    .eyebrow { color: var(--accent); font-weight: 600; font-size: 17px; margin-bottom: 8px; }
+    .title { font-size: clamp(34px, 5vw, 56px); line-height: 1.08; font-weight: 700; }
+    .sub { font-size: clamp(18px, 2vw, 21px); color: var(--muted); max-width: 680px; margin-top: 16px; line-height: 1.45; }
+    .center { text-align: center; } .center .sub { margin-left: auto; margin-right: auto; }
+
+    .grid { display: grid; gap: 18px; margin-top: 48px; grid-template-columns: repeat(3, 1fr); }
+    @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+    .card { background: var(--surface); border-radius: 20px; padding: 28px; box-shadow: var(--shadow); }
+    .card h3 { font-size: 21px; font-weight: 600; margin-top: 16px; }
+    .card p { color: var(--muted); margin: 8px 0 0; font-size: 16px; }
+    .tile { width: 44px; height: 44px; border-radius: 11px; display: grid; place-items: center; color: #fff; }
+    .tile svg { width: 22px; height: 22px; }
+
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 48px; counter-reset: s; }
+    @media (max-width: 760px) { .steps { grid-template-columns: 1fr; } }
+    .step { background: var(--surface); border-radius: 20px; padding: 28px; box-shadow: var(--shadow); }
+    .step::before { counter-increment: s; content: counter(s); display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 600; font-size: 16px; }
+    .step h3 { font-size: 21px; margin-top: 16px; font-weight: 600; }
+    .step p { color: var(--muted); margin: 8px 0 0; font-size: 16px; }
+
+    .showcase { display: grid; grid-template-columns: 1.6fr 1fr; gap: 28px; align-items: center; margin-top: 56px; }
+    @media (max-width: 860px) { .showcase { grid-template-columns: 1fr; } }
+    .showcase .desk { border-radius: 14px; overflow: hidden; box-shadow: var(--shot-shadow); }
+    .phones { display: flex; gap: 18px; justify-content: center; }
+    .phone { width: 46%; max-width: 230px; border-radius: 30px; overflow: hidden; border: 6px solid #1d1d1f; box-shadow: var(--shot-shadow); background: #1d1d1f; }
+    .phone:nth-child(2) { transform: translateY(28px); }
+
+    .voices { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 48px; }
+    @media (max-width: 760px) { .voices { grid-template-columns: 1fr; } }
+    .voice { background: var(--surface); border-radius: 22px; padding: 32px; box-shadow: var(--shadow); }
+    .voice h3 { font-size: 26px; font-weight: 700; margin-top: 18px; }
+    .voice .tag { display: inline-block; font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 980px; background: var(--fill); color: var(--muted); margin-top: 10px; }
+    .voice ul { list-style: none; padding: 0; margin: 18px 0 0; }
+    .voice li { padding: 7px 0 7px 28px; position: relative; color: var(--ink); font-size: 16px; }
+    .voice li::before { content: ""; position: absolute; left: 0; top: 11px; width: 16px; height: 16px; border-radius: 50%;
+      background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.2l2.3 2.3 4.7-4.9' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/16px no-repeat; }
+    .voice .note { font-size: 14px; color: var(--muted); margin-top: 16px; }
+
+    .privacy { background: var(--surface); border-radius: 28px; padding: 56px; box-shadow: var(--shadow); margin-top: 0; display: grid; grid-template-columns: auto 1fr; gap: 36px; align-items: center; }
+    @media (max-width: 760px) { .privacy { grid-template-columns: 1fr; padding: 34px; } }
+    .privacy .lock { width: 96px; height: 96px; border-radius: 24px; background: linear-gradient(#34c759, #248a3d); display: grid; place-items: center; color: #fff; }
+    .privacy .lock svg { width: 48px; height: 48px; }
+    .privacy ul { margin: 16px 0 0; padding-left: 20px; color: var(--muted); }
+    .privacy li { margin: 6px 0; }
+
+    .terminal { background: var(--code-bg); color: var(--code-ink); border-radius: 18px; margin: 40px auto 0; max-width: 760px; text-align: left; overflow: hidden; box-shadow: var(--shot-shadow); }
+    .terminal .bar { height: 34px; display: flex; align-items: center; gap: 7px; padding: 0 14px; border-bottom: 1px solid rgb(255 255 255 / .08); }
+    .terminal .bar i { width: 11px; height: 11px; border-radius: 50%; display: block; background: rgb(255 255 255 / .2); }
+    .terminal .bar button { margin-left: auto; background: rgb(255 255 255 / .1); color: #f5f5f7; border: 0; border-radius: 980px; padding: 4px 12px; font: 500 12px/1.4 inherit; font-family: inherit; cursor: pointer; }
+    .terminal .bar button:hover { background: rgb(255 255 255 / .18); }
+    .terminal pre { margin: 0; padding: 22px 24px; font: 15px/1.7 ui-monospace, "SF Mono", Menlo, monospace; overflow-x: auto; }
+    .terminal .c { color: #8e8e93; } .terminal .p { color: #30d158; }
+    .reqs { color: var(--muted); font-size: 15px; margin-top: 18px; }
+
+    .faq { max-width: 760px; margin: 40px auto 0; }
+    .faq details { background: var(--surface); border-radius: 16px; box-shadow: var(--shadow); margin-bottom: 12px; }
+    .faq summary { cursor: pointer; list-style: none; padding: 20px 24px; font-weight: 600; display: flex; justify-content: space-between; gap: 16px; }
+    .faq summary::-webkit-details-marker { display: none; }
+    .faq summary::after { content: "+"; color: var(--accent); font-size: 24px; line-height: 1; font-weight: 400; transition: transform .2s; }
+    .faq details[open] summary::after { transform: rotate(45deg); }
+    .faq details p { margin: 0; padding: 0 24px 22px; color: var(--muted); }
+
+    .creator { text-align: center; }
+    .avatar { width: 112px; height: 112px; border-radius: 50%; margin: 0 auto; box-shadow: var(--shadow); border: 4px solid var(--surface); }
+    .socials { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 26px; }
+    .social { display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px 10px 10px; border-radius: 980px; background: var(--surface); box-shadow: var(--shadow); color: var(--ink); font-weight: 500; transition: transform .15s; }
+    .social:hover { text-decoration: none; transform: translateY(-2px); }
+    .social svg { width: 30px; height: 30px; }
+    .support { margin-top: 30px; }
+    .support .pill { background: #ff2d55; color: #fff; }
+    .support .pill:hover { background: #ff4469; }
+
+    footer { margin-top: 110px; border-top: 1px solid var(--line); padding: 26px 0 40px; color: var(--faint); font-size: 13px; }
+    footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    footer a { color: var(--muted); }
+
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity .8s ease, transform .8s ease; }
+    .reveal.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="wrap">
+    <a class="brand" href="#"><img src="assets/logo.svg" alt="">CloudReader</a>
+    <div class="links">
+      <a class="hide-sm" href="#features">Features</a>
+      <a class="hide-sm" href="#voices">Voices</a>
+      <a class="hide-sm" href="#privacy">Privacy</a>
+      <a class="hide-sm" href="#faq">FAQ</a>
+    </div>
+    <a class="pill sm primary" href="#get">Get CloudReader</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <img class="icon" src="assets/logo.svg" alt="CloudReader app icon">
+    <h1>Turn any document<br>into an <span class="grad">audiobook.</span></h1>
+    <p class="lead">Drop in a Word, EPUB, text or Markdown file, press Play, and listen. It's free, private and open source, and it runs on your own computer.</p>
+    <div class="cta">
+      <a class="pill lg primary" href="#get">Get Started. It's Free</a>
+      <a class="pill lg ghost" href="https://github.com/theshubhamgour/CloudReader">View on GitHub
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></a>
+    </div>
+    <div class="meta">Open source (MIT) · Works offline · Desktop &amp; phone · Light &amp; dark mode</div>
+    <div class="shot reveal">
+      <div class="bar"><i></i><i></i><i></i><span>CloudReader</span></div>
+      <picture>
+        <source srcset="assets/library-dark.jpg" media="(prefers-color-scheme: dark)">
+        <img src="assets/library-light.jpg" width="1600" height="1250" alt="CloudReader's library with four audiobooks and the Add a Document card">
+      </picture>
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap center">
+    <div class="eyebrow">Features</div>
+    <h2 class="title">Everything you need to listen.<br>Nothing you don't.</h2>
+    <p class="sub">Built for people who'd rather hear their reading than stare at it: writers checking a draft, students, commuters, or anyone with a long document.</p>
+    <div class="grid" style="text-align:left">
+      <div class="card reveal">
+        <div class="tile" style="background:linear-gradient(#5ac8fa,#0071e3)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></div>
+        <h3>Any document</h3>
+        <p>Word, EPUB, plain text and Markdown. Chapters are found automatically from your headings.</p>
+      </div>
+      <div class="card reveal">
+        <div class="tile" style="background:linear-gradient(#ffcc00,#ff9500)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg></div>
+        <h3>Plays in seconds</h3>
+        <p>Press Play and listening starts almost immediately, while the rest of the book is prepared in the background.</p>
+      </div>
+      <div class="card reveal">
+        <div class="tile" style="background:linear-gradient(#bf5af2,#5e5ce6)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg></div>
+        <h3>Natural AI voices</h3>
+        <p>Use the free built-in voice, or add a Gemini key for expressive, human-like narration with 30 voices.</p>
+      </div>
+      <div class="card reveal">
+        <div class="tile" style="background:linear-gradient(#ff6482,#ff2d55)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a1 1 0 0 1 1 1v17l-6-4-6 4V4a1 1 0 0 1 1-1z"/></svg></div>
+        <h3>Bookmarks &amp; resume</h3>
+        <p>CloudReader remembers exactly where you stopped. Bookmark a moment and jump back with one tap.</p>
+      </div>
+      <div class="card reveal">
+        <div class="tile" style="background:linear-gradient(#64d2ff,#30b0c7)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg></div>
+        <h3>Desktop &amp; phone</h3>
+        <p>A clean player on your computer, and on your phone over your home Wi-Fi. Add it to your home screen like an app.</p>
+      </div>
+      <div class="card reveal">
+        <div class="tile" style="background:linear-gradient(#5ee07a,#34c759)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></div>
+        <h3>Download &amp; keep</h3>
+        <p>Export any chapter as MP3, or the whole audiobook as a ZIP, and listen anywhere.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap center">
+    <div class="eyebrow">How it works</div>
+    <h2 class="title">Three steps. That's it.</h2>
+    <div class="steps" style="text-align:left">
+      <div class="step reveal"><h3>Add a document</h3><p>Drop a file onto the Library, or click Choose File. It becomes a book with chapters.</p></div>
+      <div class="step reveal"><h3>Press Play</h3><p>Narration starts within seconds and keeps going ahead of you while you listen.</p></div>
+      <div class="step reveal"><h3>Listen anywhere</h3><p>Pause, resume, bookmark, change speed, or download it for later.</p></div>
+    </div>
+    <div class="showcase">
+      <div class="desk reveal">
+        <picture>
+          <source srcset="assets/book-dark.jpg" media="(prefers-color-scheme: dark)">
+          <img src="assets/book-light.jpg" width="1600" height="1475" alt="A book page with a Resume button, bookmarks and chapters">
+        </picture>
+      </div>
+      <div class="phones reveal">
+        <div class="phone"><img src="assets/phone-book-light.jpg" width="780" height="1688" alt="CloudReader on a phone, light mode"></div>
+        <div class="phone"><img src="assets/phone-library-dark.jpg" width="780" height="1688" alt="CloudReader on a phone, dark mode"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="voices">
+  <div class="wrap center">
+    <div class="eyebrow">Voices</div>
+    <h2 class="title">Free by default.<br>Beautiful when you want it.</h2>
+    <p class="sub">Switch between voices any time in Settings. No account is needed to get started.</p>
+    <div class="voices" style="text-align:left">
+      <div class="voice reveal">
+        <div class="tile" style="background:#8e8e93"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg></div>
+        <h3>Local Voice</h3>
+        <span class="tag">Free · Default</span>
+        <ul>
+          <li>Works right away, with no setup</li>
+          <li>Runs offline, on your computer</li>
+          <li>Nothing ever leaves your device</li>
+          <li>Unlimited and always free</li>
+        </ul>
+        <p class="note">Uses your Mac's built-in speech voices.</p>
+      </div>
+      <div class="voice reveal">
+        <div class="tile" style="background:linear-gradient(#bf5af2,#5e5ce6)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg></div>
+        <h3>Gemini AI Voice</h3>
+        <span class="tag">Bring your own key</span>
+        <ul>
+          <li>Natural, expressive narration</li>
+          <li>30 voices: warm, bright, calm and more</li>
+          <li>Choose Fast or Best Quality</li>
+          <li>Hear a sample before you choose</li>
+        </ul>
+        <p class="note">Needs a free Google Gemini API key. The free tier allows a few requests a day; whole books need billing, at roughly $0.50–0.80 per hour of audio.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="privacy">
+  <div class="wrap">
+    <div class="privacy reveal">
+      <div class="lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+      <div>
+        <h2 class="title" style="font-size:clamp(30px,4vw,44px)">Your books stay yours.</h2>
+        <ul>
+          <li>Everything (your library, audio and listening progress) is stored on your computer.</li>
+          <li>No accounts, no analytics, no tracking.</li>
+          <li>With the Local Voice, nothing is ever sent anywhere.</li>
+          <li>With Gemini, only the text being read aloud is sent to Google, and your key stays in your system keychain.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="get">
+  <div class="wrap center">
+    <div class="eyebrow">Get started</div>
+    <h2 class="title">Up and running in a minute.</h2>
+    <p class="sub">Open Terminal and paste this. The first run sets everything up, then CloudReader opens in your browser.</p>
+    <div class="terminal reveal">
+      <div class="bar"><i></i><i></i><i></i><button type="button" id="copy">Copy</button></div>
+<pre id="cmd"><span class="p">$</span> git clone https://github.com/theshubhamgour/CloudReader.git
+<span class="p">$</span> cd CloudReader
+<span class="p">$</span> ./start.sh
+<span class="c"># Optional: also open it on your phone (same Wi-Fi)</span>
+<span class="p">$</span> ./start.sh --phone</pre>
+    </div>
+    <p class="reqs">Needs macOS (recommended) or Linux with Python 3.11+, Node.js 20+ and FFmpeg.<br>On a Mac, the start script offers to install anything that's missing.</p>
+    <div class="cta"><a class="pill lg ghost" href="https://github.com/theshubhamgour/CloudReader#readme">Read the full guide
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 3.5L10.5 8 6 12.5"/></svg></a></div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap center">
+    <h2 class="title">Questions</h2>
+    <div class="faq" style="text-align:left">
+      <details><summary>Is CloudReader really free?</summary><p>Yes. CloudReader is free and open source under the MIT license, and the Local Voice costs nothing. Only the optional Gemini AI voice is billed, by Google and to your own API key, if you go beyond its free tier.</p></details>
+      <details><summary>Which file types can I use?</summary><p>Word (.docx), EPUB, plain text (.txt) and Markdown (.md), up to 50 MB. PDF isn't supported yet; export to DOCX or EPUB first.</p></details>
+      <details><summary>Do I need an internet connection?</summary><p>Not with the Local Voice. Everything runs on your computer. The Gemini voice needs an internet connection to reach Google.</p></details>
+      <details><summary>Does it work on Windows?</summary><p>CloudReader is built for macOS and also runs on Linux. The Local Voice uses macOS speech; on other systems, use the Gemini voice. Windows isn't supported yet.</p></details>
+      <details><summary>Can I listen on my phone?</summary><p>Yes. Start it with <code>./start.sh --phone</code> and open the address it prints on a phone connected to the same Wi-Fi. You can add it to your home screen to open it like an app.</p></details>
+      <details><summary>Is my writing sent anywhere?</summary><p>Not with the Local Voice. With the Gemini voice, only the passage being read aloud is sent to Google. On Gemini's free tier, Google may use that text to improve its products, so use a billed key for unpublished work.</p></details>
+    </div>
+  </div>
+</section>
+
+<section id="creator">
+  <div class="wrap creator">
+    <img class="avatar" src="https://github.com/theshubhamgour.png?size=240" width="112" height="112" alt="Shubham Gour" loading="lazy">
+    <div class="eyebrow" style="margin-top:22px">Created by</div>
+    <h2 class="title" style="font-size:clamp(32px,4vw,44px)">Shubham Gour</h2>
+    <p class="sub" style="margin-left:auto;margin-right:auto">I build practical, open-source tools and teach tech on YouTube.</p>
+    <div class="socials">
+      <a class="social" href="https://youtube.com/shubhamgourtech" target="_blank" rel="noopener">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7.5" fill="#FF0033"/><g transform="translate(4 4)"><rect x="1" y="4.5" width="22" height="15" rx="4.5" fill="#fff"/><path d="M9.75 8.6v6.8l5.9-3.4z" fill="#FF0033"/></g></svg>YouTube</a>
+      <a class="social" href="https://www.linkedin.com/in/theshubhamgour/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7.5" fill="#0A66C2"/><g transform="translate(4 4)" fill="#fff"><circle cx="6.4" cy="6.2" r="1.9"/><rect x="4.8" y="9.4" width="3.2" height="9.6" rx=".4"/><path d="M10.4 9.4h3v1.35c.55-.95 1.7-1.6 3.15-1.6 2.6 0 3.55 1.65 3.55 4.35V19h-3.15v-4.8c0-1.25-.35-2.15-1.55-2.15s-1.85.9-1.85 2.15V19h-3.15z"/></g></svg>LinkedIn</a>
+      <a class="social" href="https://github.com/theshubhamgour" target="_blank" rel="noopener">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7.5" fill="#24292F"/><path transform="translate(5 5) scale(.9167)" fill="#fff" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>GitHub</a>
+    </div>
+    <div class="support">
+      <a class="pill lg" href="https://razorpay.me/@decodethedeskbyshubhamgour" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.3s-7.6-4.6-7.6-10.1A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.6 2.6c0 5.5-7.6 10.1-7.6 10.1z"/></svg>
+        Support This Project</a>
+      <p class="reqs">CloudReader is free. If it helps you, your support keeps it, and projects like it, going.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© <span id="year">2026</span> Shubham Gour · Released under the <a href="https://github.com/theshubhamgour/CloudReader/blob/main/LICENSE">MIT License</a></span>
+    <span><a href="https://github.com/theshubhamgour/CloudReader">GitHub</a> · <a href="https://github.com/theshubhamgour/CloudReader/issues">Report an issue</a></span>
+  </div>
+</footer>
+
+<script>
+  document.getElementById("year").textContent = new Date().getFullYear();
+  document.getElementById("copy").addEventListener("click", async (e) => {
+    const text = document.getElementById("cmd").innerText.split("\n").filter((l) => l.startsWith("$")).map((l) => l.slice(2)).slice(0, 3).join("\n");
+    try { await navigator.clipboard.writeText(text); e.target.textContent = "Copied"; } catch { e.target.textContent = "Select & copy"; }
+    setTimeout(() => (e.target.textContent = "Copy"), 1800);
+  });
+  const io = new IntersectionObserver((entries) => entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } }), { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+</script>
+</body>
+</html>

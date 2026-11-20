@@ -134,3 +134,18 @@ def test_document_without_headings_is_one_full_text_part():
 def test_readable_title_from_file_name():
     assert library.title_from_filename("github-support_contributors-request") == "Github Support Contributors Request"
     assert library.title_from_filename("My_Novel-Draft") == "My Novel Draft"
+
+
+def test_title_line_at_top_of_text_file_is_not_a_chapter():
+    txt = b"The Lighthouse Keeper\n\nChapter One: Dusk\n\nElias climbed the steps.\n\nChapter Two: Fog\n\nA horn sounded."
+    _, blocks = extract_blocks("keeper.txt", txt)
+    title, chapters = detect_chapters(blocks)
+    assert title == "The Lighthouse Keeper"
+    assert [c.title for c in chapters] == ["Chapter One: Dusk", "Chapter Two: Fog"]
+
+
+def test_real_front_matter_is_kept():
+    txt = b"A note before we begin.\n\nThis book was written over many winters.\n\nChapter One: Dusk\n\nElias climbed the steps."
+    _, blocks = extract_blocks("keeper.txt", txt)
+    _, chapters = detect_chapters(blocks)
+    assert chapters[0].title == "Front Matter" and len(chapters[0].paragraphs) == 2
