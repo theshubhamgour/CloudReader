@@ -1,0 +1,28 @@
+# Local data: library, manuscripts, generated audio, logs
+data/
+
+# Secrets
+.env
+.env.*
+!.env.example
+backend/.env
+
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node / Next
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/next-env.d.ts
+*.tsbuildinfo
+
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+*.swp
